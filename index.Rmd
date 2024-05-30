@@ -1,0 +1,233 @@
+---
+title: "Capstone Project"
+author: "Melissa Komatsu"
+date: "2024-05-29"
+output: "github_document"
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+```
+## **The Business Task**
+
+The founder Urška Sršen is interested in learning about new growth opportunities for Bellabeat fitness trackers for women. Through analyzing the trends of how people in general use their fitness trackers, Bellabeat can gain insight into how to improve the Leaf product or perhaps design a new product.  
+
+**The Company and Products**  
+- Bellabeat Fitness Trackers for women.  
+
+**Products**
+
+* **Bellabeat app:** The Bellabeat app provides users with health data related to their activity, sleep, stress, menstrual cycle, and mindfulness habits. This data can help users better understand their current habits and make healthy decisions. The Bellabeat app connects to their line of smart wellness products.
+
+* **Leaf:** Bellabeat’s classic wellness tracker can be worn as a bracelet, necklace, or clip. The Leaf tracker connects
+to the Bellabeat app to track activity, sleep, and stress.
+
+* **Time:** This wellness watch combines the timeless look of a classic timepiece with smart technology to track user
+activity, sleep, and stress. The Time watch connects to the Bellabeat app to provide you with insights into your
+daily wellness.
+
+* **Spring:** This is a water bottle that tracks daily water intake using smart technology to ensure that you are appropriately hydrated throughout the day. The Spring bottle connects to the Bellabeat app to track your hydration levels.
+
+* **Bellabeat membership:** Bellabeat also offers a subscription-based membership program for users.
+
+* **Membership** gives users 24/7 access to fully personalized guidance on nutrition, activity, sleep, health and beauty, and mindfulness based on their lifestyle and goals.
+
+**The Key Stakeholders:**  
+- Urška Sršen  
+- Sando Mur  
+- Bellabeat Marketing Analytics team  
+ 
+**The Questions to be answered:**  
+ 1. What are some trends in smart device usage?  
+ 2. How could these trends apply to Bellabeat customers?  
+ 3. How could these trends help influence Bellabeat marketing strategy?  
+ 
+### **Prepare the Data**
+
+**The Data Source**. 
+* The data sources used were Fitbit Fitness Tracker Data which is a (CC0: Public Domain, dataset made available through [Mobius](https://www.kaggle.com/arashnic)). Only the csv sheets from the file Fitabase Data 4.12.16-5.12.16 were used in this analysis.   
+
+**Files from the Fitabase Data 4.12.16-5.12.16**  
+- Total Steps  
+- Sedentary Time (minutes)  
+- Time in bed (minutes)  
+- Time sleeping (minutes)  
+
+**The data selected for analysis:**  
+ - Sedentary time (minutes)  
+ - Total steps  
+ - Time sleeping (minutes)  
+ - Time in bed (minutes)  
+ 
+**The Credibility of the Data**  
+- Outdated - the dataset was collected in 2016.  
+- Data Bias - Consent was given from 30 users, but there is only data for 33.  
+- Incomprehensive - Missing observations from both the daily activity and sleep datasets.  
+- Unreliable - No demographics given such as age, gender, race, etc.  
+
+### **Process**
+
+The data was sorted, filtered, and checked for all the usual errors such as misspellings, errors, etc. The following processes were completed and noted in comments in the relevant sheets.  
+
+**Loading the data**
+I chose Rstudio for my analysis so I began the process by loading the necessary packages and tools.  
+
+Loading the packages
+```{r Loading packages and data}
+install.packages("tidyverse")
+  library(tidyverse)
+  library(ggplot2)
+  library(tidyr)
+  library(readr)
+  library(dplyr)
+  library(janitor)
+  install.packages("wesanderson") 
+  library(wesanderson)
+
+  #loading the data
+ daily_activity <- read.csv("dailyActivity_merged.csv")
+ sleep_day <- read.csv("sleepDay_merged.csv")
+```
+**Inspecting the data**. 
+I then inspected the data to confirm the number of unique users and observations.  
+
+The daily activity log showed 33 unique users, of which 21 logged in for 31 days.  
+
+The sleep data log showed 2 people logged in for 31 days and 4 users who logged in for 28 days.  
+
+```{r Inspecting the data}
+#Confirming the consistency of days logged in and possible missing data
+da_data_count <- daily_activity %>%
+group_by(Id) %>% # grouping by id
+summarise(user_logged_days = n()) %>%
+arrange(user_logged_days)
+head(da_data_count,n=10)
+```
+```{r}
+#Grouping the number of users by number of days logged in
+da_count_userdata <- da_data_count %>%
+group_by(user_logged_days) %>% # grouping by user observations
+summarise(num_users = n()) %>%     arrange(desc(user_logged_days))
+head(da_count_userdata,n=10)
+```
+From these results we can see 21 people logged in for 31 days, only 3 people logged in for 30 days and so on...
+
+
+```{r}
+#Examining how many users logged in for sleep data
+sleep_data_count <- sleep_day %>%
+group_by(Id) %>% # Grouping by id
+summarise(user_logged_days = n()) %>%
+arrange(desc(user_logged_days))
+head(sleep_data_count,n=10)
+```
+
+```{r}
+#Grouping the number of users by number of sleep days logged
+sleep_count_userdata <- sleep_data_count %>%     
+ group_by(user_logged_days) %>% # grouping by user observations
+ summarise(num_users = n()) %>% arrange(desc(user_logged_days))
+head(sleep_count_userdata,n=10)
+```
+From this data we can see only 2 people logged in for the full 31 days followed by 4 logging in for 28 days. Users didn't consistently log their sleep.
+
+**Cleaning the data**
+To begin the process of cleaning the data, I first took a look at the data and its columns in both the daily activity sheet and the sleep data sheet. I then identified there were 33 unique users in the daily activity file and 25 unique users in the sleep data file. Last, I removed duplicates from each of the data sets.  
+
+
+```{r}
+#A quick look at the data
+head(daily_activity)
+colnames(daily_activity)
+```
+
+```{r}
+#A quick look at the sleep data
+head(sleep_day)
+colnames(sleep_day)
+```
+
+```{r}
+#Confirming the number of users
+n_distinct(daily_activity$Id) #Number of unique users with daily activity
+n_distinct(sleep_day$Id) #Number of unique users who logged sleep activity
+```
+
+```{r}
+#Remove duplicates
+daily_activity <- distinct(daily_activity)
+```
+0 duplicates removed
+
+```{r}
+sleep <- distinct(sleep_day)
+```
+3 duplicates removed
+
+**Transforming the data**
+The first step in transforming the data was to format the file and column names to lowercase followed by renaming the column names for clarity. After that the dates in both files were changed to standard format since in the sleep dataset the date took the form of m/d/y/h/m/s. Last, I then merged the daily activity and sleep data sets into one file.  
+
+
+```{r}
+#Formatting column names to lower case
+daily_activity <- clean_names(daily_activity)
+sleep <- clean_names(sleep)
+totalsteps <- clean_names(daily_activity)
+sedentaryminutes <- clean_names(daily_activity)
+totalminsalseep <- clean_names(sleep_day)
+totaltimeinbed <- clean_names(sleep_day)
+```
+
+
+```{r}
+#Renaming columns names for clarification
+daily_activity <- daily_activity %>%
+rename(date = activity_date)
+
+sleep <- sleep %>%
+rename(date = sleep_day)
+```
+
+
+```{r}
+#Changing dates to standard format
+daily_activity$date <- mdy(daily_activity$date)
+daily_activity$date <- as.POSIXct(daily_activity$date,format="%Y/%m/%d") # Formatting using as.POSIXct as there was hms in original data.
+sleep$date <- mdy_hms(sleep$date)
+```
+
+
+```{r}
+#Merging the daily activity data with the sleep data into dataset act_sleep_merged
+act_sleep_merged <- left_join(daily_activity,sleep, by = c("id","date"))
+```
+
+### **Analyze**
+The key business question is “how people are already using their smart devices to track their fitness”. Therefore, I focused on analyzing the relationships between the key features found in the datasets which were the “total steps” compared to “sedentary minutes” and “total sleep (mins)”, compared to “total time in bed”.  
+
+There is an obvious correlation between sedentary minutes and total steps taken in a day i.e., the fewer the steps taken, the more the rate of sedentary minutes increased. However, there is a big contrast between the total sleep time (mins) and the total time spent in bed. One might think that the time spent in bed and the time sleeping should be very close, but surprisingly, according to the chart there were a few users who spent more time in bed than asleep. Furthermore, since the datasets are incomprehensible that is to say there were 21 unique users who recorded daily activity for 31 days, while only there is only 1 unique user who recorded daily sleep for 28 days, it was not possible to accurately compare whether or not sleeping longer was directly related to more activity. That is to say, having compared the daily activity set to the sleep data set would create biased data since neither set has comprehensible data.  
+
+### **Share**
+
+
+```{r}
+#Plotting the total number of steps with sedentary minutes to show the corrleation between logged activity and sedentary time.
+ggplot(data=act_sleep_merged, aes(x=total_steps, y=sedentary_minutes, color = date)) + geom_point() + geom_smooth()
+```
+
+```{r}
+#Plotting the total mins of sleep with total time in bed to show the correlation between logged sleep and non-sleep time.
+ggplot(data=act_sleep_merged, aes(x=total_minutes_asleep, y=total_time_in_bed, color = date)) + geom_point() + geom_smooth()
+```
+
+As can be seen in the splatter-plot charts, the data showed that a majority of the participants are moderate to very active on a daily basis having walked 5,000 - 10,000 steps per day on average with very little sedentary time. The sleep analysis is inconclusive as not every user has the same number of sleep days logged but those who did log in slept 7 hours on average while spending about 7 ½ hours in bed.  
+
+Based on the findings in these data sets, it appears most people use their smart devices to track steps and active/sedentary time, while not many people utilize the sleep tracker. Furthermore, there are additional questions which cannot be answered with this data, such as whether or not users remember to wear their devices, whether or not they are interested in tracking factors such as sleep, among others.  
+
+### **Act**
+
+**Summary/Findings**  
+The founder, Urška Sršen, asked how people are using their smart devices. The Fitbit devices tracked steps, distance, activity rates, calories burned, and sleep.  
+
+After reviewing the daily activity data in addition to the daily sleep data, my conclusion is most users did not take advantage of the sleep function of their tracker to measure their sleep habits and its effects on their health.  
+My recommendation would be to compare these findings with Bellabeat user data to see whether or not their users consistently use their devices and whether or not they track sleep patterns. In addition to investigating Bellabeat users activity, it could also be beneficial to Bellabeat to develop and promote features which would remind users to wear their device and also offer incentive as to how tracking their sleep habits would be beneficial to their health.
